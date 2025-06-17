@@ -90,9 +90,7 @@ This project demonstrates the simulation, monitoring, alerting, and cloud-based 
 3. Deploy the Node-RED flow.
 
 4. Open the Dashboard at:
-   ```
-http://(local_server)/ui
-```
+   ```http://(local_server)/ui```
 
 5. Click Inject to simulate new data and observe live updates, cloud storage, and email alerts.
 
