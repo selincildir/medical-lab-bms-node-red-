@@ -1,0 +1,112 @@
+[
+    {
+      "id": "151d3497efb71a36",
+      "type": "tab",
+      "label": "Node-Red-Flow-BMS",
+      "disabled": false,
+      "info": "",
+      "env": []
+    },
+    {
+      "id": "d438399d36be63ac",
+      "type": "inject",
+      "z": "151d3497efb71a36",
+      "name": "",
+      "props": [
+        { "p": "payload" },
+        { "p": "topic", "vt": "str" }
+      ],
+      "repeat": "",
+      "crontab": "",
+      "once": false,
+      "onceDelay": "5",
+      "topic": "",
+      "payload": "{\"temperature\":24.5,\"humidity\":60,\"air_quality\":95}",
+      "payloadType": "json",
+      "x": 90,
+      "y": 80,
+      "wires": [["deb77fdacba5f88b"]]
+    },
+    {
+      "id": "f69875b7a240df72",
+      "type": "function",
+      "z": "151d3497efb71a36",
+      "name": "Validate Data",
+      "func": "if (msg.payload.temperature > 50 || msg.payload.humidity > 90) {\n    msg.payload.alert = \"Sensor value out of safe range!\";\n}\nreturn msg;",
+      "outputs": 1,
+      "timeout": 0,
+      "noerr": 0,
+      "x": 190,
+      "y": 140,
+      "wires": [["38f6af9a1b9ed5f5"]]
+    },
+    {
+      "id": "2401a5c669af51a0",
+      "type": "google-cloud-firestore",
+      "z": "151d3497efb71a36",
+      "account": "",
+      "keyFilename": "credentials.json",
+      "name": "sensor_readings",
+      "projectId": "effective-tea-458013-m7",
+      "mode": "set",
+      "x": 530,
+      "y": 440,
+      "wires": []
+    },
+    {
+      "id": "38f6af9a1b9ed5f5",
+      "type": "function",
+      "z": "151d3497efb71a36",
+      "name": "Classify Air Quality",
+      "func": "let air_quality = msg.payload.air_quality;\n\nif (air_quality <= 50) {\n    msg.payload.air_quality_level = \"Good\";\n} else if (air_quality > 50 && air_quality <= 100) {\n    msg.payload.air_quality_level = \"Moderate\";\n} else {\n    msg.payload.air_quality_level = \"Bad\";\n}\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": 0,
+      "noerr": 0,
+      "x": 270,
+      "y": 200,
+      "wires": [["d0d9260dbe48bc9d"]]
+    },
+    {
+      "id": "d0d9260dbe48bc9d",
+      "type": "function",
+      "z": "151d3497efb71a36",
+      "name": "Temperature and Other Alerts",
+      "func": "// Create an alerts array\nlet alerts = [];\n\n// Check temperature threshold\nif (msg.payload.temperature > 30) {\n    alerts.push(\"High Temperature Detected\");\n}\n\n// Check humidity thresholds\nif (msg.payload.humidity < 35) {\n    alerts.push(\"Low Humidity Detected\");\n}\nif (msg.payload.humidity > 65) {\n    alerts.push(\"High Humidity Detected\");\n}\n\n// Check air quality threshold\nif (msg.payload.air_quality > 100) {\n    alerts.push(\"Poor Air Quality Detected\");\n}\n\n// Add alerts to payload\nif (alerts.length > 0) {\n    msg.payload.temp_alert = alerts.join(\"; \");\n} else {\n    msg.payload.temp_alert = \"\";\n}\n\n// Prepare separate payload for Firestore\nmsg.payload_firestore = {\n    path: \"sensor_readings/\" + Math.random().toString(36).substring(2, 15),\n    content: {\n        temperature: msg.payload.temperature,\n        humidity: msg.payload.humidity,\n        air_quality: msg.payload.air_quality,\n        air_quality_level: msg.payload.air_quality_level || \"\",\n        temp_alert: msg.payload.temp_alert || \"\"\n    }\n};\n\nreturn msg;",
+      "outputs": 1,
+      "timeout": 0,
+      "noerr": 0,
+      "x": 350,
+      "y": 260,
+      "wires": [["d10b91fde78720a5","5add7202027f1728","6149df28b062a092","43742f878bf10ce4"]]
+    },
+    {
+      "id": "dcbaa6d265d7ebb8",
+      "type": "GSheet",
+      "z": "151d3497efb71a36",
+      "creds": "credentials_ref",
+      "method": "append",
+      "sheet": "1sKDZ1lMbh2lCRKSEC1z8yrqK3KbA_SCUVicjOmW-LIc",
+      "cells": "SensorData",
+      "flatten": false,
+      "name": "Google Sheets Auth",
+      "x": 680,
+      "y": 380,
+      "wires": []
+    },
+    {
+      "id": "945fa3cb68b59eb5",
+      "type": "e-mail",
+      "z": "151d3497efb71a36",
+      "server": "smtp.gmail.com",
+      "port": "465",
+      "authtype": "BASIC",
+      "secure": true,
+      "tls": true,
+      "name": "your-email@example.com",
+      "dname": "Sensor Alert Email",
+      "x": 710,
+      "y": 540,
+      "wires": []
+    }
+  ]
+  
